@@ -1,26 +1,44 @@
-"""
-Simply display the contents of the webcam with optional mirroring using OpenCV 
-via the new Pythonic cv2 interface.  Press <esc> to quit.
-"""
-
+from random import randint
+from flask import Flask, render_template, Response, jsonify
+import random
+import numpy as np
 import cv2
+from skimage import filters, color
 
+class VideoCamera(object):
+    def __init__(self):
+        self.video = cv2.VideoCapture(0)
 
-def show_webcam(mirror=False):
-    cam = cv2.VideoCapture(0)
+    def __del__(self):
+        self.video.release()   
+
+    def get_frame(self):
+        ret, frame = self.video.read()
+        frame = (filters.sobel(color.rgb2gray(frame))*255).astype('uint8')
+        # DO WHAT YOU WANT WITH TENSORFLOW / KERAS AND OPENCV
+
+        ret, jpeg = cv2.imencode('.jpg', frame)
+
+        return jpeg.tobytes()
+
+app = Flask(__name__)
+
+video_stream = VideoCamera()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+def gen(camera):
     while True:
-        ret_val, img = cam.read()
-        if mirror: 
-            img = cv2.flip(img, 1)
-        cv2.imshow('my webcam', img)
-        if cv2.waitKey(1) == 27: 
-            break  # esc to quit
-    cv2.destroyAllWindows()
+        frame = camera.get_frame()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
-
-def main():
-    show_webcam(mirror=True)
-
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen(video_stream),
+                mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    main()
+    app.run(host='127.0.0.1', debug=True,port="5000")
