@@ -18,18 +18,18 @@ class VideoCamera(object):
     def __del__(self):
         self.video.release()
 
+    def __find_face(self, img):
+        pass
+
     def __find_face_center(self, img):
         center = (0, 0)
 
-        face_cascade = cv2.CascadeClassifier(
-            "training/haarcascade_frontalface_default.xml")
-
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(img_gray, 1.1, 4)
-        for (x, y, w, h) in faces[:1]:
-            x_mean = int((2*x+w)/2)
-            y_mean = int((2*y+h)/2)
-            center = (x_mean, y_mean)
+        x, y, w, h = self.__find_face(self, img)
+
+        x_mean = int((2*x+w)/2)
+        y_mean = int((2*y+h)/2)
+        center = (x_mean, y_mean)
 
         return center
 
@@ -40,20 +40,24 @@ class VideoCamera(object):
                             for i in range(len(img_center)))
 
         d = diff_vector[0]
-        temp_view = img[:,:bounds[1]-d
-                        ] if d >= 0 else img[:,-d:]
+        temp_view = img[:, :bounds[1]-d
+                        ] if d >= 0 else img[:, -d:]
         d = diff_vector[1]
         temp_view = temp_view[:bounds[0]-d
-                        ] if d >= 0 else temp_view[-d:]
+                              ] if d >= 0 else temp_view[-d:]
 
         transform = temp_view.copy()
         diff_vector = tuple(abs(i) for i in diff_vector)
         pad_h = int(diff_vector[1]/2)
         pad_w = int(diff_vector[0]/2)
-        transform = np.vstack((np.zeros((pad_h, transform.shape[1], 3)), transform))
-        transform = np.vstack((transform, np.zeros((pad_h, transform.shape[1], 3))))
-        transform = np.hstack((np.zeros((transform.shape[0], pad_w, 3)), transform))
-        transform = np.hstack((transform, np.zeros((transform.shape[0], pad_w, 3))))
+        transform = np.vstack(
+            (np.zeros((pad_h, transform.shape[1], 3)), transform))
+        transform = np.vstack(
+            (transform, np.zeros((pad_h, transform.shape[1], 3))))
+        transform = np.hstack(
+            (np.zeros((transform.shape[0], pad_w, 3)), transform))
+        transform = np.hstack(
+            (transform, np.zeros((transform.shape[0], pad_w, 3))))
         return transform
 
     def __crop(self, img):
