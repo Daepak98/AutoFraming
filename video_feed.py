@@ -1,25 +1,5 @@
-from random import randint
 from flask import Flask, render_template, Response, jsonify
-import random
-import numpy as np
-import cv2
-from skimage import filters, color
-
-class VideoCamera(object):
-    def __init__(self):
-        self.video = cv2.VideoCapture(0)
-
-    def __del__(self):
-        self.video.release()   
-
-    def get_frame(self):
-        ret, frame = self.video.read()
-        frame = (filters.sobel(color.rgb2gray(frame))*255).astype('uint8')
-        # DO WHAT YOU WANT WITH TENSORFLOW / KERAS AND OPENCV
-
-        ret, jpeg = cv2.imencode('.jpg', frame)
-
-        return jpeg.tobytes()
+from camera import VideoCamera
 
 app = Flask(__name__)
 
