@@ -110,20 +110,20 @@ mean_face, std_face = computeFaceStats(*ims)
 
 
 def test(img, mean, std):
-    stats = -1*np.ones(img.shape)
+    stats = np.zeros(img.shape) #-1*np.ones(img.shape)
     stats = stats[:-mean.shape[0], :-mean.shape[1]]
     for y in range(0, img.shape[0]-mean.shape[0], int(mean.shape[0]/4)):
         for x in range(0, img.shape[1]-mean.shape[1], int(mean.shape[1]/4)):
             sub = img[y:y+mean.shape[0], x:x+mean.shape[1]]
-            stats[y, x] = ((sub - mean)/(std)).sum()
+            stats[y, x] = (abs(sub - mean)/(std)).sum()
     # stats[stats == 0] = np.max(stats)
-    try:
-        min_y, min_x = np.where(stats == np.max(stats[stats > 0]))
-        min_y = min_y[0]
-        min_x = min_x[0]
-    except:
-        min_y = int(img.shape[0]/2-mean.shape[0]/2)
-        min_x = int(img.shape[1]/2-mean.shape[1]/2)
+# try:
+    min_y, min_x = np.where(stats == np.min(stats[stats != 0]))
+    min_y = min_y[0]
+    min_x = min_x[0]
+# except:
+#     min_y = int(img.shape[0]/2-mean.shape[0]/2)
+#     min_x = int(img.shape[1]/2-mean.shape[1]/2)
     return min_y, min_x, min_y+mean.shape[0], min_x+mean.shape[1]
 
 

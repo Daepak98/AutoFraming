@@ -6,14 +6,12 @@ from numpy.lib.function_base import diff
 import random
 import os
 
-deebug = True
-mirrored = True
-
-
 class VideoCamera(object):
-    def __init__(self):
+    def __init__(self, debug=False, mirror=False):
         ims = self.__get_training()
         self.mean_face, self.std_face = self.__computeFaceStats(*ims)
+        self.deebug = debug
+        self.mirrored = mirror
         self.video = cv2.VideoCapture(0)
 
     def __del__(self):
@@ -50,10 +48,10 @@ class VideoCamera(object):
         for y in range(0, img.shape[0]-mean.shape[0], int(mean.shape[0]/detail)):
             for x in range(0, img.shape[1]-mean.shape[1], int(mean.shape[1]/detail)):
                 sub = img[y:y+mean.shape[0], x:x+mean.shape[1]]
-                stats[y, x] = ((sub - mean)/(std)).sum()
+                stats[y, x] = (abs(sub - mean)/(std)).sum()
         # stats[stats == 0] = np.max(stats)
         try:
-            min_y, min_x = np.where(stats == np.max(stats[stats > 0]))
+            min_y, min_x = np.where(stats == np.min(stats[stats > 0]))
             min_y = min_y[0]
             min_x = min_x[0]
         except:
@@ -73,7 +71,7 @@ class VideoCamera(object):
 
         return center
 
-    def __transform_image(self, img, move_this):
+    def __transform_image(self, img, move_this, padding=0):
         bounds = img.shape[:-1]
         img_center = tuple(int(i/2) for i in bounds[::-1])
         diff_vector = tuple(img_center[i] - move_this[i]
@@ -87,38 +85,34 @@ class VideoCamera(object):
                               ] if d >= 0 else temp_view[-d:]
 
         transform = temp_view.copy()
-        diff_vector = tuple(abs(i) for i in diff_vector)
-        pad_h = int(diff_vector[1]/2)
-        pad_w = int(diff_vector[0]/2)
-        transform = np.vstack(
-            (np.zeros((pad_h, transform.shape[1], 3)), transform))
-        transform = np.vstack(
-            (transform, np.zeros((pad_h, transform.shape[1], 3))))
-        transform = np.hstack(
-            (np.zeros((transform.shape[0], pad_w, 3)), transform))
-        transform = np.hstack(
-            (transform, np.zeros((transform.shape[0], pad_w, 3))))
+        # diff_vector = tuple(abs(i) for i in diff_vector)
+        # pad_h = int(diff_vector[1]/2)+padding
+        # pad_w = int(diff_vector[0]/2)+padding
+        # transform = np.vstack(
+        #     (np.zeros((pad_h, transform.shape[1], 3)), transform))
+        # transform = np.vstack(
+        #     (transform, np.zeros((pad_h, transform.shape[1], 3))))
+        # transform = np.hstack(
+        #     (np.zeros((transform.shape[0], pad_w, 3)), transform))
+        # transform = np.hstack(
+        #     (transform, np.zeros((transform.shape[0], pad_w, 3))))
         return transform
-
-    def __crop(self, img):
-        return img.copy()
 
     def get_processed(self):
         _, frame = self.video.read()
 
         # Performance Phase
         center = self.__find_face_center(frame)
-        if deebug:
+        if self.deebug:
             frame = cv2.circle(frame, center, 20, (255, 0, 0), -1)
-        transformed = self.__transform_image(frame, center)
-        cropped = self.__crop(transformed)
+        transformed = self.__transform_image(frame, center, 20)
 
-        final = cv2.flip(cropped, 1) if mirrored else cropped
+        final = cv2.flip(transformed, 1) if self.mirrored else transformed
         return final
 
     def get_frame(self):
         final = self.get_processed()
-        ret, png = cv2.imencode('.png', final)
+        _, png = cv2.imencode('.png', final)
 
         return png.tobytes()
 
@@ -126,10 +120,10 @@ class VideoCamera(object):
 # This method is used to test the `VideoCamera` class
 # independently
 if __name__ == "__main__":
-    video_stream = VideoCamera()
+    video_stream = VideoCamera(debug=True, mirror=True)
     while True:
         frame = video_stream.get_processed()
-        cv2.imshow("Testing Images", frame)
+        cv2.imshow("Testing Images", frame.astype('float64')/frame.max())
         if cv2.waitKey(1) == 27:
             break  # esc to quit
     cv2.destroyAllWindows()
