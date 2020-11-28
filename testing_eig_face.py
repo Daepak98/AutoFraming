@@ -56,9 +56,6 @@ def computeFaceCov(ims, mean):
 # # face_cov = computeFaceCov(ims, mean_face)
 # # topVectors = getTopMEigVectors(face_cov)
 
-# # %%
-plt.imshow(mean_face, cmap=plt.cm.gray)
-
 # %% Run a Video Stream
 
 
@@ -106,6 +103,9 @@ for i, name in enumerate(dirs):
     ims.append(im[:, :, 1])
 mean_face, std_face = computeFaceStats(*ims)
 
+# # %%
+# plt.imshow(mean_face, cmap=plt.cm.gray)
+
 # %%
 
 
@@ -117,9 +117,13 @@ def test(img, mean, std):
             sub = img[y:y+mean.shape[0], x:x+mean.shape[1]]
             stats[y, x] = ((sub - mean)/(std)).sum()
     # stats[stats == 0] = np.max(stats)
-    min_y, min_x = np.where(stats == np.max(stats[stats > 0]))
-    min_y = min_y[0]
-    min_x = min_x[0]
+    try:
+        min_y, min_x = np.where(stats == np.max(stats[stats > 0]))
+        min_y = min_y[0]
+        min_x = min_x[0]
+    except:
+        min_y = int(img.shape[0]/2-mean.shape[0]/2)
+        min_x = int(img.shape[1]/2-mean.shape[1]/2)
     return min_y, min_x, min_y+mean.shape[0], min_x+mean.shape[1]
 
 
