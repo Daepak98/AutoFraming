@@ -21,7 +21,6 @@ def find_center(img):
 
     x = np.sum(img*width_idx)/np.sum(img*width_idx != 0)-1
     y = np.sum(img*height_idx)/np.sum(img*height_idx != 0)-1
-
     if np.isnan(x) or np.isnan(y):
         return x, y
 
@@ -34,7 +33,9 @@ def find_center(img):
 def canny(img):
     if len(img.shape) == 3:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    cannyIm = feature.canny(img, 8)
+    #img = img/255.0
+    img = img*1.0
+    cannyIm = feature.canny(img, 20)
     return find_center(cannyIm)
 
 
@@ -44,6 +45,7 @@ class Process:
     def __init__(self, img):
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        img = img*1.0
         soble_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
         soble_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
         soble_symmetric_x = np.array([[-1, -2, -1], [2, 4, 2], [-1, -2, -1]])
@@ -65,7 +67,7 @@ class Process:
         self.gImD = np.maximum(np.abs(g1ImD), np.abs(g2ImD))
         self.gImC = ndimage.correlate(img, soble_center, mode='nearest')
 
-        n = 0.01
+        n = 0.1
         self.T = self.gIm.reshape(-1)[np.argsort(self.gIm.reshape(-1))
                                       ][-int(self.gIm.shape[0]*self.gIm.shape[1]*n)]
         self.TS = self.gImS.reshape(-1)[np.argsort(self.gImS.reshape(-1))

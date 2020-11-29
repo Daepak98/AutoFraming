@@ -139,8 +139,8 @@ if __name__ == "__main__":
         while True:
             frame = video_stream.get_processed()
             cv2.imshow(f"Testing {VideoCamera.plain_names[i]}",
-                       frame.astype('float64')/frame.max())
+                           frame.astype('float64')/frame.max())
             if cv2.waitKey(1) == 27:
-                # cv2.destroyAllWindows()
+                    # cv2.destroyAllWindows()
                 break  # esc to quit
         cv2.destroyAllWindows()
