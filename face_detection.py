@@ -179,11 +179,15 @@ def open_cv(img):
     return center
 
 
-# Execution
-# # Method 1
-# center = canny(original)
-# # Method 2
-# center = sobel(original)
-# center = circular(original)
-# center = ensemble(original)
-# center = ensemble(original, True)
+if __name__ == "__main__":
+    v = cv2.VideoCapture(0)
+    _, original = v.read()
+    v.release()
+    # Execution
+    # Method 1
+    center = canny(original)
+    # Method 2
+    center = sobel(original)
+    center = circular(original)
+    center = ensemble(original)
+    center = ensemble(original, True)

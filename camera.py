@@ -29,7 +29,7 @@ class VideoCamera(object):
         MEAN_FACE: mean_face
     }
 
-    __plain_names = {
+    plain_names = {
         OPEN_CV: "Open CV Cascade Classifier",
         CANNY: "Canny Edge Detection",
         SOBEL: "Sobel Edge Detection",
@@ -40,8 +40,6 @@ class VideoCamera(object):
     }
 
     def __init__(self, method=TEST_ALL, debug=False, mirror=False):
-        ims = self.__get_training()
-        self.__mean_face, self.__std_face = self.__computeFaceStats(*ims)
         self.deebug = debug
         self.mirrored = mirror
         self.method = method
@@ -49,60 +47,6 @@ class VideoCamera(object):
 
     def __del__(self):
         self.video.release()
-
-    def __get_training(self):
-        ims = []
-        imspath = "./training/"
-        dirs = os.listdir(imspath)
-        random.shuffle(dirs)
-        num_keep = 1000
-        for i, name in enumerate(dirs):
-            if num_keep != 0:
-                if i >= num_keep:
-                    break
-            impath = f"{imspath}{name}"
-            im = cv2.imread(impath)
-            im = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
-            ims.append(im[:, :, 1])
-        return ims
-
-    def __computeFaceStats(self, *ims):
-        ims = np.array(ims)
-        mean = np.mean(ims, axis=0)
-        std = np.std(ims, axis=0)
-        return mean, np.sum(std)
-
-    def __find_face(self, img):
-        mean = self.__mean_face
-        std = self.__std_face
-        stats = -1*np.ones(img.shape)
-        stats = stats[:-mean.shape[0], :-mean.shape[1]]
-        detail = 12
-        for y in range(0, img.shape[0]-mean.shape[0], int(mean.shape[0]/detail)):
-            for x in range(0, img.shape[1]-mean.shape[1], int(mean.shape[1]/detail)):
-                sub = img[y:y+mean.shape[0], x:x+mean.shape[1]]
-                stats[y, x] = (abs(sub - mean)/(std)).sum()
-        # stats[stats == 0] = np.max(stats)
-        try:
-            min_y, min_x = np.where(stats == np.min(stats[stats > 0]))
-            min_y = min_y[0]
-            min_x = min_x[0]
-        except:
-            min_y = int(img.shape[0]/2-mean.shape[0]/2)
-            min_x = int(img.shape[1]/2-mean.shape[1]/2)
-        return min_y, min_x, min_y+mean.shape[0], min_x+mean.shape[1]
-
-    def __find_face_center(self, img):
-        center = (0, 0)
-
-        img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        y, x, h, w = self.__find_face(img_gray[:, :, 1])
-
-        x_mean = int((2*x+w)/2)
-        y_mean = int((2*y+h)/2)
-        center = (x_mean, y_mean)
-
-        return center
 
     def __transform_image(self, img, move_this, padding=0):
         bounds = img.shape[:-1]
@@ -151,11 +95,11 @@ class VideoCamera(object):
                 if key == self.OPEN_CV:
                     openCVCenter = center
                 if True in np.isnan(center):
-                    marked = cv2.putText(marked, f"{self.__plain_names[key]}: Cannot Compute",
+                    marked = cv2.putText(marked, f"{self.plain_names[key]}: Cannot Compute",
                                          (0, (i+1)*text_padding), cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=colors[i])
                 else:
                     marked = cv2.circle(marked, center, 20, colors[i], -1)
-                    marked = cv2.putText(marked, f"{self.__plain_names[key]}: {np.linalg.norm(np.array(openCVCenter)-np.array(center))}",
+                    marked = cv2.putText(marked, f"{self.plain_names[key]}: {np.linalg.norm(np.array(openCVCenter)-np.array(center))}",
                                          (0, (i+1)*text_padding), cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=colors[i])
             final = marked
         else:
@@ -166,9 +110,12 @@ class VideoCamera(object):
                 method = self.__methods[self.ENSEMBLE_CLOSING]
                 center = method(frame, True)
             if True in np.isnan(center):
-                final = cv2.putText(frame, f"{self.__plain_names[self.method]}: Cannot Compute",
+                final = cv2.putText(frame, f"{self.plain_names[self.method]}: Cannot Compute",
                                     (0, text_padding), cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=(0, 0, 255))
             else:
+                if self.deebug:
+                    frame = cv2.circle(
+                        frame, center, 20, (0, 0, 0), -1)
                 transformed = self.__transform_image(frame, center, 20)
                 final = transformed
 
@@ -185,12 +132,15 @@ class VideoCamera(object):
 # This method is used to test the `VideoCamera` class
 # independently
 if __name__ == "__main__":
-    video_stream = VideoCamera(
-        VideoCamera.TEST_ALL, debug=True, mirror=False)
-    while True:
-        frame = video_stream.get_processed()
-        cv2.imshow("Testing Images", frame.astype('float64')/frame.max())
-        if cv2.waitKey(1) == 27:
-            # cv2.destroyAllWindows()
-            break  # esc to quit
-    cv2.destroyAllWindows()
+    # video_stream = VideoCamera(
+    #     VideoCamera.TEST_ALL, debug=True, mirror=False)
+    for i in range(7):
+        video_stream = VideoCamera(i, debug=True, mirror=False)
+        while True:
+            frame = video_stream.get_processed()
+            cv2.imshow(f"Testing {VideoCamera.plain_names[i]}",
+                       frame.astype('float64')/frame.max())
+            if cv2.waitKey(1) == 27:
+                # cv2.destroyAllWindows()
+                break  # esc to quit
+        cv2.destroyAllWindows()
