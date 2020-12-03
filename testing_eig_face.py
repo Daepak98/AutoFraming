@@ -103,22 +103,22 @@ for i, name in enumerate(dirs):
     ims.append(im[:, :, 1])
 mean_face, std_face = computeFaceStats(*ims)
 
-# # %%
-# plt.imshow(mean_face, cmap=plt.cm.gray)
+# %%
+plt.imshow(mean_face, cmap=plt.cm.gray)
 
 # %%
 
 
 def test(img, mean, std):
-    stats = np.zeros(img.shape) #-1*np.ones(img.shape)
+    stats = -1*np.ones(img.shape)
     stats = stats[:-mean.shape[0], :-mean.shape[1]]
-    for y in range(0, img.shape[0]-mean.shape[0], int(mean.shape[0]/4)):
-        for x in range(0, img.shape[1]-mean.shape[1], int(mean.shape[1]/4)):
+    for y in range(0, img.shape[0]-mean.shape[0], int(mean.shape[0]/12)):
+        for x in range(0, img.shape[1]-mean.shape[1], int(mean.shape[1]/12)):
             sub = img[y:y+mean.shape[0], x:x+mean.shape[1]]
-            stats[y, x] = (abs(sub - mean)/(std)).sum()
+            stats[y, x] = (np.abs(sub - mean)/std).sum()
     # stats[stats == 0] = np.max(stats)
 # try:
-    min_y, min_x = np.where(stats == np.min(stats[stats != 0]))
+    min_y, min_x = np.where(stats == np.min(stats[stats > -1]))
     min_y = min_y[0]
     min_x = min_x[0]
 # except:
@@ -134,9 +134,13 @@ while True:
     process_this = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
     min_y, min_x, min_h, min_w = test(
         process_this[:, :, 1], mean_face, std_face)
+    center = ((min_x+min_w)/2, (min_y+min_h)/2)
+    center = tuple(int(i) for i in center)
     frame[min_y:min_h, min_x:min_w, 1] = mean_face
     frame = cv2.rectangle(frame, (min_x, min_y),
                           (min_w, min_h), (0, 0, 0), 2)
+    frame = cv2.circle(frame, center, radius=20, color=(255,0,0), thickness=-1)
+    
     # cv2.imshow("HSV", process_this[:,:,1])
     cv2.imshow("Testing", frame)
     if cv2.waitKey(1) == 27:
